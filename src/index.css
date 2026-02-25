@@ -1,0 +1,230 @@
+@import 'tailwindcss';
+
+/* ========================================
+   DesignMyInvites v2 — Global Styles
+   ======================================== */
+
+@theme {
+  /* Brand Colors */
+  --color-brand-50: #f0f4ff;
+  --color-brand-100: #dbe4ff;
+  --color-brand-200: #bac8ff;
+  --color-brand-300: #91a7ff;
+  --color-brand-400: #748ffc;
+  --color-brand-500: #5c7cfa;
+  --color-brand-600: #4c6ef5;
+  --color-brand-700: #4263eb;
+  --color-brand-800: #3b5bdb;
+  --color-brand-900: #364fc7;
+
+  /* Neutral / Surface Colors */
+  --color-surface-50: #f8f9fa;
+  --color-surface-100: #f1f3f5;
+  --color-surface-200: #e9ecef;
+  --color-surface-300: #dee2e6;
+  --color-surface-400: #ced4da;
+  --color-surface-500: #adb5bd;
+  --color-surface-600: #868e96;
+  --color-surface-700: #495057;
+  --color-surface-800: #343a40;
+  --color-surface-900: #212529;
+
+  /* Semantic Colors */
+  --color-success: #40c057;
+  --color-warning: #fab005;
+  --color-danger: #fa5252;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Playfair Display', serif;
+
+  /* Spacing */
+  --spacing-panel: 260px;
+  --spacing-toolbar: 52px;
+
+  /* Shadows */
+  --shadow-panel: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-canvas: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-surface-900);
+  background-color: var(--color-surface-100);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-400);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-500);
+}
+
+/* ========================================
+   Panel Input Styles
+   ======================================== */
+
+.input-base {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--color-surface-300);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--color-surface-900);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-base:focus {
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 2px rgba(92, 124, 250, 0.15);
+}
+
+.input-base:disabled {
+  background: var(--color-surface-100);
+  color: var(--color-surface-500);
+  cursor: not-allowed;
+}
+
+.label-text {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-surface-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+/* ========================================
+   Button Styles
+   ======================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-brand-600);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-700);
+}
+
+.btn-secondary {
+  background: var(--color-surface-200);
+  color: var(--color-surface-800);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-300);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-surface-700);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-200);
+}
+
+.btn-icon {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #e03131;
+}
+
+/* ========================================
+   Studio Layout
+   ======================================== */
+
+.studio-layout {
+  display: grid;
+  grid-template-rows: var(--spacing-toolbar) 1fr;
+  grid-template-columns: var(--spacing-panel) 1fr var(--spacing-panel);
+  height: 100vh;
+  width: 100vw;
+}
+
+.studio-toolbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.studio-left-panel {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.studio-canvas-area {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.studio-right-panel {
+  grid-column: 3;
+  grid-row: 2;
+}

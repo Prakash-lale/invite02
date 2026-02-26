@@ -1,6 +1,5 @@
 import useEditorStore from '../../stores/useEditorStore'
 import DEFAULT_FONTS from '../../lib/defaultFonts'
-import { useState } from 'react'
 
 /**
  * TextProperties — Right panel controls for a selected text layer.
@@ -17,25 +16,26 @@ function TextProperties() {
     const text = layer.text
     const hasBinding = text.content && text.content.includes('{{')
 
-    // Shadow effect helpers
-    const shadowEffect = text.effects?.find((e) => e.type === 'shadow')
-    const [showShadow, setShowShadow] = useState(!!shadowEffect)
-
-    const updateShadow = (updates) => {
+    // --- Effect helpers ---
+    const getEffect = (type) => (text.effects || []).find((e) => e.type === type)
+    const updateEffect = (type, updates, defaults = {}) => {
         const effects = [...(text.effects || [])]
-        const idx = effects.findIndex((e) => e.type === 'shadow')
+        const idx = effects.findIndex((e) => e.type === type)
         if (idx >= 0) {
             effects[idx] = { ...effects[idx], ...updates }
         } else {
-            effects.push({ type: 'shadow', color: 'rgba(0,0,0,0.3)', offsetX: 2, offsetY: 2, blur: 4, ...updates })
+            effects.push({ type, ...defaults, ...updates })
         }
         updateLayerText(layer.id, { effects })
     }
-
-    const removeShadow = () => {
-        const effects = (text.effects || []).filter((e) => e.type !== 'shadow')
+    const removeEffect = (type) => {
+        const effects = (text.effects || []).filter((e) => e.type !== type)
         updateLayerText(layer.id, { effects })
     }
+
+    const shadowEffect = getEffect('shadow')
+    const outlineEffect = getEffect('outline')
+    const glowEffect = getEffect('glow')
 
     return (
         <div className="space-y-4">
@@ -251,41 +251,119 @@ function TextProperties() {
 
             <div className="h-px bg-surface-200" />
 
-            {/* Shadow Effect */}
+            {/* ===== TEXT EFFECTS ===== */}
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="label-text mb-0">Shadow</label>
-                    <button
-                        onClick={() => {
-                            if (showShadow) { removeShadow(); setShowShadow(false) }
-                            else { updateShadow({}); setShowShadow(true) }
-                        }}
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded ${showShadow ? 'bg-brand-100 text-brand-700' : 'bg-surface-100 text-surface-500'}`}
-                    >
-                        {showShadow ? 'ON' : 'OFF'}
-                    </button>
-                </div>
-                {showShadow && (
-                    <div className="space-y-2">
-                        <div className="flex gap-2 items-center">
-                            <input
-                                type="color"
-                                value={shadowEffect?.color || '#000000'}
-                                onChange={(e) => updateShadow({ color: e.target.value })}
-                                className="w-7 h-7 rounded cursor-pointer border border-surface-300"
-                            />
-                            <div className="grid grid-cols-3 gap-1 flex-1">
-                                <input type="number" value={shadowEffect?.offsetX || 2} onChange={(e) => updateShadow({ offsetX: parseInt(e.target.value) })} className="input-base text-center" title="X" />
-                                <input type="number" value={shadowEffect?.offsetY || 2} onChange={(e) => updateShadow({ offsetY: parseInt(e.target.value) })} className="input-base text-center" title="Y" />
-                                <input type="number" value={shadowEffect?.blur || 4} onChange={(e) => updateShadow({ blur: parseInt(e.target.value) })} className="input-base text-center" title="Blur" />
-                            </div>
+                <label className="label-text mb-3">Effects</label>
+
+                {/* Shadow */}
+                <EffectToggle
+                    label="Shadow"
+                    active={!!shadowEffect}
+                    onToggle={(on) => on ? updateEffect('shadow', {}, { color: 'rgba(0,0,0,0.3)', offsetX: 2, offsetY: 2, blur: 4 }) : removeEffect('shadow')}
+                >
+                    <div className="flex gap-2 items-center">
+                        <input
+                            type="color"
+                            value={shadowEffect?.color?.startsWith('rgba') ? '#000000' : (shadowEffect?.color || '#000000')}
+                            onChange={(e) => updateEffect('shadow', { color: e.target.value })}
+                            className="w-7 h-7 rounded cursor-pointer border border-surface-300"
+                        />
+                        <div className="grid grid-cols-3 gap-1 flex-1">
+                            <input type="number" value={shadowEffect?.offsetX ?? 2} onChange={(e) => updateEffect('shadow', { offsetX: parseInt(e.target.value) })} className="input-base text-center" title="X offset" />
+                            <input type="number" value={shadowEffect?.offsetY ?? 2} onChange={(e) => updateEffect('shadow', { offsetY: parseInt(e.target.value) })} className="input-base text-center" title="Y offset" />
+                            <input type="number" value={shadowEffect?.blur ?? 4} onChange={(e) => updateEffect('shadow', { blur: parseInt(e.target.value) })} className="input-base text-center" title="Blur" min={0} />
                         </div>
-                        <p className="text-[10px] text-surface-400 flex justify-between px-9">
-                            <span>X</span><span>Y</span><span>Blur</span>
-                        </p>
                     </div>
-                )}
+                    <p className="text-[10px] text-surface-400 flex justify-between px-9">
+                        <span>X</span><span>Y</span><span>Blur</span>
+                    </p>
+                </EffectToggle>
+
+                {/* Outline */}
+                <EffectToggle
+                    label="Outline"
+                    active={!!outlineEffect}
+                    onToggle={(on) => on ? updateEffect('outline', {}, { color: '#000000', width: 1 }) : removeEffect('outline')}
+                >
+                    <div className="flex gap-2 items-center">
+                        <input
+                            type="color"
+                            value={outlineEffect?.color || '#000000'}
+                            onChange={(e) => updateEffect('outline', { color: e.target.value })}
+                            className="w-7 h-7 rounded cursor-pointer border border-surface-300"
+                        />
+                        <div className="flex-1">
+                            <input
+                                type="number"
+                                value={outlineEffect?.width ?? 1}
+                                onChange={(e) => updateEffect('outline', { width: Math.max(0, parseInt(e.target.value) || 0) })}
+                                className="input-base"
+                                min={0}
+                                max={10}
+                                step={1}
+                            />
+                        </div>
+                    </div>
+                    <p className="text-[10px] text-surface-400 flex justify-between px-9">
+                        <span>Color</span><span>Width (px)</span>
+                    </p>
+                </EffectToggle>
+
+                {/* Glow */}
+                <EffectToggle
+                    label="Glow"
+                    active={!!glowEffect}
+                    onToggle={(on) => on ? updateEffect('glow', {}, { color: '#ffffff', blur: 10 }) : removeEffect('glow')}
+                >
+                    <div className="flex gap-2 items-center">
+                        <input
+                            type="color"
+                            value={glowEffect?.color || '#ffffff'}
+                            onChange={(e) => updateEffect('glow', { color: e.target.value })}
+                            className="w-7 h-7 rounded cursor-pointer border border-surface-300"
+                        />
+                        <div className="flex-1">
+                            <input
+                                type="number"
+                                value={glowEffect?.blur ?? 10}
+                                onChange={(e) => updateEffect('glow', { blur: Math.max(0, parseInt(e.target.value) || 0) })}
+                                className="input-base"
+                                min={0}
+                                max={50}
+                                step={1}
+                            />
+                        </div>
+                    </div>
+                    <p className="text-[10px] text-surface-400 flex justify-between px-9">
+                        <span>Color</span><span>Blur (px)</span>
+                    </p>
+                </EffectToggle>
             </div>
+        </div>
+    )
+}
+
+/**
+ * EffectToggle — Reusable toggle card for a text effect.
+ */
+function EffectToggle({ label, active, onToggle, children }) {
+    return (
+        <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-surface-700">{label}</span>
+                <button
+                    onClick={() => onToggle(!active)}
+                    className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full transition-colors ${active ? 'bg-brand-100 text-brand-700' : 'bg-surface-100 text-surface-400 hover:bg-surface-200'
+                        }`}
+                >
+                    {active ? 'ON' : 'OFF'}
+                </button>
+            </div>
+            {active && (
+                <div className="space-y-1.5 pl-1 animate-fade-in">
+                    {children}
+                </div>
+            )}
         </div>
     )
 }

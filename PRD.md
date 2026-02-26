@@ -1,8 +1,8 @@
 # DesignMyInvites v2 — Product Requirements Document
 
-> **Version**: 2.0  
-> **Date**: February 25, 2026  
-> **Status**: Planning  
+> **Version**: 2.2  
+> **Date**: February 26, 2026  
+> **Status**: Active Development (Phase 2 In Progress)  
 > **Product Name**: DesignMyInvites  
 > **Repository**: `invite-002`
 
@@ -86,21 +86,22 @@ graph LR
 
 ### 4.2 Proposed Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend Framework** | React + Vite | Fast SPA with HMR |
-| **Styling** | TailwindCSS | Rapid, responsive UI development |
-| **Routing** | React Router DOM | Client-side navigation |
-| **Database & Auth** | Supabase (PostgreSQL) | Template storage, user data, authentication |
-| **Canvas Rendering** | HTML/CSS layers + react-moveable | Drag/resize/rotate on canvas (Studio) |
-| **Rich Text** | contenteditable or inline editing | Direct text editing on canvas |
-| **Image Export** | html-to-image / html2canvas | High-quality PNG/JPEG download |
-| **Asset Storage** | Supabase Storage or Cloudinary | Image CDN + optimization |
-| **Deployment** | Vercel | Hosting + edge CDN |
-| **State Management** | Zustand or Context API | Lightweight, predictable state |
+| Layer | Technology | Status | Purpose |
+|-------|-----------|--------|---------|
+| **Frontend Framework** | React 19 + Vite 7 | ✅ Confirmed | Fast SPA with HMR |
+| **Styling** | TailwindCSS 4 | ✅ Confirmed | Rapid, responsive UI development |
+| **State Management** | Zustand | ✅ Confirmed | Lightweight store for canvas/layers/history |
+| **Routing** | React Router DOM | ✅ Confirmed | Client-side navigation |
+| **Canvas Interaction** | react-moveable | ✅ Confirmed | Drag/resize/rotate with smart snapping |
+| **Canvas Rendering** | HTML/CSS layers | ✅ Confirmed | DOM-based layers (not `<canvas>`) |
+| **Font Loading** | Google Fonts API (dynamic) | ✅ Confirmed | 20 fonts (incl. Hindi/Devanagari) loaded on-demand |
+| **Image Export** | html2canvas | ✅ Confirmed | High-quality PNG/JPEG at 2× resolution |
+| **Database & Auth** | Supabase (PostgreSQL) | 🔲 Planned | Template storage, user data, authentication |
+| **Asset Storage** | Supabase Storage or Cloudinary | 🔲 Planned | Image CDN + optimization |
+| **Deployment** | Vercel | 🔲 Planned | Hosting + edge CDN |
 
 > [!NOTE]
-> Tech stack is a starting proposal. Final choices will be validated during implementation planning.
+> Tech stack decisions marked ✅ are confirmed and implemented. Remaining items will be finalized in later phases.
 
 ---
 
@@ -114,9 +115,18 @@ The Template Studio is a desktop-focused visual editor used by your team to desi
 - **Priority**: P0
 - Create new template with selectable canvas presets or custom dimensions
 - Presets: A4 Portrait/Landscape, A5 Portrait/Landscape, Square (1:1), Instagram Post (1080×1080), Instagram Story (1080×1920), WhatsApp Status (1080×1920), Custom
-- Canvas background: solid color, gradient (linear/radial), or uploaded image
+- Canvas background: solid color, gradient (linear), or uploaded image
+- **Background gradient presets**: 24 curated quick-pick gradients (warm, cool, pastel, jewel, dark, neutral, festive) + custom start/end color pickers + angle slider
+- **Background solid presets**: 12 quick-pick colors + custom hex color picker
 - Zoom controls: fit-to-screen, zoom in/out, percentage selector
 - Rulers and optional grid/snap-to-grid for precise alignment
+
+#### TS-01b: Canva-Style Sidebar ✅
+- **Priority**: P0
+- 64px dark-themed icon rail on the far left with expandable 280px content panels
+- Panels: **Templates**, **Layers**, **Elements**, **Text**, **Uploads**, **Background**
+- Click an icon to open its panel; click again to collapse
+- Replaces the legacy single LayerPanel with a modern, organized tool sidebar
 
 #### TS-02: Infinite Undo/Redo
 - **Priority**: P0
@@ -163,6 +173,10 @@ The Template Studio is a desktop-focused visual editor used by your team to desi
 - Text alignment: left, center, right, justify
 - Letter spacing and line height controls
 - Multi-line text support with auto-wrapping or manual line breaks
+- **Text resize behavior** (Canva-like):
+  - Bounding box auto-sizes height to fit text content (`height: auto`)
+  - Resizing via handles scales font size proportionally (min 8px)
+  - Width constrains text wrapping; height adjusts automatically
 
 #### TS-07: Data Bindings for Dynamic Text
 - **Priority**: P0
@@ -185,23 +199,43 @@ The Template Studio is a desktop-focused visual editor used by your team to desi
 
 ### 5.4 Image & Asset Layers
 
-#### TS-09: Image Upload & Placement
+#### TS-09: Image Upload & Placement ✅
 - **Priority**: P0
 - Upload images (PNG, JPG, SVG, WebP) directly into the canvas as image layers
-- Drag to position, resize handles to scale (maintain aspect ratio by default, free-resize with modifier key)
-- Image layers support: opacity, border radius, rotation
-- Support both uploaded images and URL-based images
+- **Uploads panel** with persistent gallery — uploaded images saved to localStorage for reuse across sessions
+- Multi-file upload support, 2-column thumbnail grid with hover overlay, delete button
+- Click any gallery thumbnail to re-add it as a new image layer
+- Drag to position, resize handles to scale
+- Image layers support: opacity, border radius, rotation, fit mode (cover/contain/fill)
+- **Image filters & effects** (stored in `image.filters`):
+  - **Color Tint**: Color picker + intensity slider + enable/disable toggle (applies as `mix-blend-mode: multiply` overlay)
+  - **Drop Shadow**: X/Y offset, blur radius, shadow color (CSS `drop-shadow` filter)
+  - **Flip**: Horizontal and vertical flip buttons
+  - **Brightness**: 0–200% slider
+  - **Contrast**: 0–200% slider
+  - **Blur**: 0–20px slider
+  - **Reset All Effects**: One-click reset button
+- Support both uploaded images (base64 data URIs) and URL-based images
 
-#### TS-10: Asset Library
+#### TS-10: Asset Library ✅
 - **Priority**: P1
-- Built-in library panel of reusable assets organized by category:
-  - **Borders & Frames**: Decorative border PNGs in various styles
-  - **Cultural Symbols**: Ganesh, Om, Kalash, Swastik, Diya, Rangoli, etc.
-  - **Decorative Elements**: Floral motifs, mandalas, dividers, corners
-  - **Icons**: Event-related icons (rings, house, baby, cake, etc.)
-- Click to add asset as a new layer on canvas
+- Built-in library panel (Elements tab in sidebar) of reusable SVG assets organized by category:
+  - **Borders & Frames**: Decorative border SVGs in various styles
+  - **Cultural Symbols**: Ganesh, Om, Kalash, Swastik, Diya, Rangoli, Shree, etc.
+  - **Decorative Elements**: Floral motifs, hearts, stars, mandalas, dividers, corners
+- Click to add asset as a new image layer on canvas (SVG → data URI)
+- All image filters (tint, shadow, flip, brightness, contrast, blur) apply to SVG elements too
 - Search/filter within library
 - Admin can upload new assets to the library over time
+
+#### TS-10b: Templates Panel ✅
+- **Priority**: P0
+- Sidebar panel for browsing, searching, and loading saved templates
+- Search by template name, tags, or occasion
+- Occasion filter pills (All, Wedding, Birthday, Engagement, Baby Shower, etc.)
+- 2-column template grid with **real captured thumbnails** (html2canvas snapshot)
+- Click a template to load it into the current editor (with confirmation)
+- Thumbnails auto-generated on save as compressed JPEG data URLs
 
 ### 5.5 Shape Layers
 
@@ -403,7 +437,18 @@ Each template is stored as a JSON document in the database. This is the single s
       "image": {
         "src": "https://...",
         "objectFit": "cover",
-        "borderRadius": 0
+        "borderRadius": 0,
+        "filters": {
+          "tintEnabled": false,
+          "tintColor": "#000000",
+          "tintIntensity": 1,
+          "shadowEnabled": false,
+          "shadowX": 4, "shadowY": 4, "shadowBlur": 8, "shadowColor": "#000000",
+          "flipH": false, "flipV": false,
+          "brightness": 100,  // 0-200%
+          "contrast": 100,    // 0-200%
+          "blur": 0           // 0-20px
+        }
       },
 
       // --- Shape-specific properties ---
@@ -584,27 +629,40 @@ flowchart TD
 
 ## 11. Phased Roadmap
 
-### Phase 1: Foundation — Template Studio Core
-- [ ] Project setup (React + Vite + TailwindCSS + Supabase)
-- [ ] Studio canvas editor: create canvas, set background
-- [ ] Layer system: add/remove/reorder text & image layers
-- [ ] Layer properties: position, size, rotation, opacity
-- [ ] Text editing: inline edit, font picker, size, color, alignment
-- [ ] Data bindings: `{{fieldName}}` placeholders in text
-- [ ] Form field builder: define fields per template
-- [ ] Save/load templates to Supabase (JSON)
-- [ ] Undo/redo history
+### Phase 1: Foundation — Template Studio Core ✅
+- [x] Project setup (React 19 + Vite 7 + TailwindCSS 4)
+- [x] Studio canvas editor: create canvas, set background
+- [x] Layer system: add/remove/reorder text, image & shape layers
+- [x] Layer properties: position, size, rotation, opacity
+- [x] Text editing: font picker, size, color, alignment, letter spacing, line height
+- [x] Data bindings: `{{fieldName}}` placeholders in text
+- [x] Form field builder: define fields per template
+- [x] Save/load templates to localStorage (Supabase migration planned)
+- [x] Undo/redo history (50-state cap)
+- [x] On-canvas interaction via react-moveable (drag/resize/rotate with smart snapping)
+- [x] Shape layer properties (type, fill, stroke, border radius)
+- [x] Google Fonts dynamic loading (20 fonts incl. Hindi/Devanagari)
+- [x] Export to PNG (html2canvas at 2× resolution)
+- [x] Keyboard shortcuts (Ctrl+Z/Y, Ctrl+S, Delete, Ctrl+D, arrows)
 
-### Phase 2: Studio Polish & Assets
+### Phase 2: Studio Polish & Assets (In Progress)
+- [x] Canva-style sidebar shell (64px icon rail + 280px expandable panels)
+- [x] Templates panel — browse, search, filter, and load saved templates
+- [x] Asset library panel (borders, symbols, decoratives as SVG elements)
+- [x] Text quick-add presets (heading, subheading, body, caption)
+- [x] Uploads panel with persistent image gallery (localStorage-backed)
+- [x] Background panel with 24 gradient presets + custom controls
+- [x] Image/element filters: color tint, drop shadow, flip, brightness, contrast, blur
+- [x] Auto-generated template thumbnails on save (html2canvas → JPEG)
+- [x] Real-time rotation sync between canvas drag handles and property panel
+- [x] Template metadata panel (occasion, tags, status, language)
+- [x] Template preview mode (with sample data)
+- [x] Template duplicate & archive
+- [x] CSS polish & visual refinements
 - [ ] Text effects (shadow, outline, glow, gradient fill)
-- [ ] Asset library panel (borders, symbols, decoratives)
 - [ ] Layer grouping & multi-select
 - [ ] Alignment & distribution tools
-- [ ] Smart guides / snapping
-- [ ] Keyboard shortcuts
-- [ ] Template metadata (occasion, tags, status)
-- [ ] Template preview mode (with sample data)
-- [ ] Template duplicate & archive
+- [ ] Supabase migration (replace localStorage)
 
 ### Phase 3: Storefront MVP
 - [ ] Homepage with occasion selection
@@ -620,7 +678,7 @@ flowchart TD
 ### Phase 4: Cloud & Performance
 - [ ] Asset storage migration to Supabase Storage / Cloudinary
 - [ ] Image optimization pipeline (thumbnails, WebP, lazy loading)
-- [ ] Auto-generate template thumbnails on save
+- [x] Auto-generate template thumbnails on save *(moved from Phase 4, completed in Phase 2)*
 - [ ] CDN caching & edge delivery
 - [ ] Performance auditing (Lighthouse > 90 on mobile)
 
@@ -645,7 +703,7 @@ flowchart TD
 | **100% DB-driven from day 1** | No hardcoded template configs | Avoid the v1 scaling problem (1900+ line config file) |
 | **Form fields per template** | Not per occasion | Maximum flexibility — same occasion can have minimal and detailed templates |
 | **HTML/CSS rendering** | Not `<canvas>` element | Easier to manipulate, style, and bind dynamic text; export via html-to-image |
-| **Zustand or Context for state** | TBD during implementation | Lightweight, avoiding Redux complexity for this scale |
+| **Zustand for state** | Zustand (confirmed) | Single store with history, clean API, minimal boilerplate |
 | **Studio is desktop-only** | Not responsive | Internal tool; investing mobile effort in the Storefront instead |
 
 ---

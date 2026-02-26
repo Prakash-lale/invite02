@@ -5,6 +5,9 @@ import CanvasProperties from './CanvasProperties'
 import TextProperties from './TextProperties'
 import ImageProperties from './ImageProperties'
 import FormFieldPanel from './FormFieldPanel'
+import ShapeProperties from './ShapeProperties'
+import TemplateMetadata from './TemplateMetadata'
+import AlignmentTools from './AlignmentTools'
 
 /**
  * PropertyPanel — Right sidebar with tabs for Properties and Form Fields.
@@ -28,18 +31,27 @@ function PropertyPanel() {
     }
 
     const renderProperties = () => {
-        if (!selectedLayer) return <CanvasProperties />
+        if (!selectedLayer) return (
+            <>
+                <CanvasProperties />
+                <div className="h-px bg-surface-200 my-3" />
+                <TemplateMetadata />
+            </>
+        )
+        let layerProps = null
         switch (selectedLayer.type) {
-            case 'text': return <TextProperties />
-            case 'image': return <ImageProperties />
-            case 'shape':
-                return (
-                    <div className="text-xs text-surface-500 text-center py-8">
-                        Shape properties panel coming soon.
-                    </div>
-                )
-            default: return null
+            case 'text': layerProps = <TextProperties />; break
+            case 'image': layerProps = <ImageProperties />; break
+            case 'shape': layerProps = <ShapeProperties />; break
+            default: layerProps = null
         }
+        return (
+            <>
+                {layerProps}
+                <div className="h-px bg-surface-200 my-3" />
+                <AlignmentTools />
+            </>
+        )
     }
 
     return (
@@ -49,8 +61,8 @@ function PropertyPanel() {
                 <button
                     onClick={() => setActiveTab('properties')}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium flex-1 justify-center transition-colors ${activeTab === 'properties'
-                            ? 'text-brand-700 border-b-2 border-brand-600 bg-brand-50/50'
-                            : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
+                        ? 'text-brand-700 border-b-2 border-brand-600 bg-brand-50/50'
+                        : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
                         }`}
                 >
                     <FiSliders size={13} />
@@ -59,8 +71,8 @@ function PropertyPanel() {
                 <button
                     onClick={() => setActiveTab('fields')}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium flex-1 justify-center transition-colors ${activeTab === 'fields'
-                            ? 'text-brand-700 border-b-2 border-brand-600 bg-brand-50/50'
-                            : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
+                        ? 'text-brand-700 border-b-2 border-brand-600 bg-brand-50/50'
+                        : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
                         }`}
                 >
                     <FiList size={13} />

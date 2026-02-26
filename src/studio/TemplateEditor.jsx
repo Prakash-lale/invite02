@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import TopToolbar from './toolbar/TopToolbar'
-import LayerPanel from './panels/LayerPanel'
+import SidebarShell from './panels/SidebarShell'
 import PropertyPanel from './panels/PropertyPanel'
 import Canvas from './canvas/Canvas'
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts'
@@ -38,7 +38,7 @@ function TemplateEditor() {
     return (
         <div className="studio-layout">
             <TopToolbar />
-            <LayerPanel />
+            <SidebarShell />
             <Canvas />
             <PropertyPanel />
         </div>

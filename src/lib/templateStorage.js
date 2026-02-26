@@ -63,6 +63,20 @@ const templateStorage = {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
     },
 
+    /** Update a single field on a template */
+    updateField(id, field, value) {
+        const templates = this.getAll()
+        const idx = templates.findIndex((t) => t.id === id)
+        if (idx >= 0) {
+            templates[idx][field] = value
+            templates[idx].metadata = {
+                ...templates[idx].metadata,
+                updatedAt: new Date().toISOString(),
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
+        }
+    },
+
     /** Delete all templates */
     clear() {
         localStorage.removeItem(STORAGE_KEY)

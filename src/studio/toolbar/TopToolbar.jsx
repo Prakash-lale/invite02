@@ -1,10 +1,11 @@
-import { FiChevronLeft, FiSave, FiEye, FiEyeOff, FiRotateCcw, FiRotateCw, FiZoomIn, FiZoomOut, FiCheck } from 'react-icons/fi'
+import { FiChevronLeft, FiSave, FiEye, FiEyeOff, FiRotateCcw, FiRotateCw, FiZoomIn, FiZoomOut, FiCheck, FiDownload } from 'react-icons/fi'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState, useCallback, useEffect } from 'react'
 import useEditorStore from '../../stores/useEditorStore'
 import useFormFieldStore from '../../stores/useFormFieldStore'
 import templateStorage from '../../lib/templateStorage'
 import { generateId } from '../../lib/utils'
+import { exportCanvas, generateThumbnail } from '../../lib/exportCanvas'
 
 /**
  * TopToolbar — Top bar wired to Zustand + save functionality.
@@ -32,9 +33,17 @@ function TopToolbar() {
 
     const [saveStatus, setSaveStatus] = useState(null)
 
-    const handleSave = useCallback(() => {
+    const handleSave = useCallback(async () => {
+        setSaveStatus('saving')
+
         const template = getTemplateJSON()
         template.formFields = formFields
+
+        // Generate thumbnail from the canvas
+        const canvasSurface = document.querySelector('.studio-canvas-surface')
+        if (canvasSurface) {
+            template.thumbnailUrl = await generateThumbnail(canvasSurface)
+        }
 
         // If editing an existing template, keep the ID
         if (id && id !== 'new') {
@@ -122,15 +131,55 @@ function TopToolbar() {
                 </button>
             </div>
 
-            {/* Right Section — Preview + Save */}
+            {/* Right Section — Preview + Export + Save */}
             <div className="flex items-center gap-2">
                 <button
-                    onClick={togglePreviewMode}
+                    onClick={() => {
+                        if (!isPreviewMode && formFields.length > 0) {
+                            // Auto-fill sample data from form fields when entering preview
+                            const sampleData = {}
+                            formFields.forEach((field) => {
+                                if (field.defaultValue) {
+                                    sampleData[field.id] = field.defaultValue
+                                } else {
+                                    // Generate sensible sample based on label
+                                    const label = (field.label || '').toLowerCase()
+                                    if (label.includes('name')) sampleData[field.id] = 'Priya Sharma'
+                                    else if (label.includes('date')) sampleData[field.id] = '15 March 2026'
+                                    else if (label.includes('time')) sampleData[field.id] = '7:00 PM'
+                                    else if (label.includes('venue') || label.includes('location')) sampleData[field.id] = 'The Grand Palace, Mumbai'
+                                    else if (label.includes('phone') || label.includes('mobile')) sampleData[field.id] = '+91 98765 43210'
+                                    else if (label.includes('email')) sampleData[field.id] = 'priya@example.com'
+                                    else if (label.includes('rsvp')) sampleData[field.id] = 'rsvp@example.com'
+                                    else sampleData[field.id] = field.placeholder || `Sample ${field.label}`
+                                }
+                            })
+                            useEditorStore.getState().setPreviewData(sampleData)
+                        }
+                        togglePreviewMode()
+                    }}
                     className={`btn text-xs ${isPreviewMode ? 'btn-primary' : 'btn-secondary'}`}
                     title="Toggle Preview"
                 >
                     {isPreviewMode ? <FiEyeOff size={14} /> : <FiEye size={14} />}
                     {isPreviewMode ? 'Edit' : 'Preview'}
+                </button>
+                <button
+                    onClick={async () => {
+                        const el = document.querySelector('.studio-canvas-surface')
+                        if (el) {
+                            try {
+                                await exportCanvas(el, { filename: templateName || 'invitation', format: 'png', scale: 2 })
+                            } catch (err) {
+                                console.error('Export failed:', err)
+                            }
+                        }
+                    }}
+                    className="btn btn-secondary text-xs"
+                    title="Export PNG"
+                >
+                    <FiDownload size={14} />
+                    Export
                 </button>
                 <button
                     onClick={handleSave}
@@ -146,3 +195,4 @@ function TopToolbar() {
 }
 
 export default TopToolbar
+

@@ -300,7 +300,16 @@ const useEditorStore = create((set, get) => ({
             thumbnailUrl: '',
             canvas: deepClone(state.canvas),
             layers: deepClone(state.layers),
-            formFields: [], // Will be populated from useFormFieldStore
+            formFields: state.layers
+                .filter((l) => l.type === 'text' && l.text.isFormField)
+                .map((l) => ({
+                    layerId: l.id,
+                    id: l.id,
+                    label: l.text.formFieldLabel || l.name || 'Field',
+                    type: l.text.formFieldType || 'text',
+                    required: l.text.formFieldRequired || false,
+                    defaultValue: l.text.content,
+                })),
             previewData: deepClone(state.previewData),
             metadata: {
                 createdAt: new Date().toISOString(),

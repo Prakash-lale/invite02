@@ -57,7 +57,6 @@ export function createDefaultTextLayer(overrides = {}) {
         opacity: 1,
         text: {
             content: 'New Text',
-            binding: '',
             fontFamily: 'Inter',
             fontSize: 24,
             fontWeight: 'normal',
@@ -67,6 +66,11 @@ export function createDefaultTextLayer(overrides = {}) {
             letterSpacing: 0,
             lineHeight: 1.4,
             effects: [],
+            // Form field properties
+            isFormField: false,
+            formFieldLabel: '',
+            formFieldType: 'text',
+            formFieldRequired: false,
         },
         ...overrides,
     }

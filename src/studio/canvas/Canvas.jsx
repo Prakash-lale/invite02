@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 import Moveable from 'react-moveable'
 import useEditorStore from '../../stores/useEditorStore'
 
@@ -17,10 +17,15 @@ function Canvas() {
     const isPreviewMode = useEditorStore((s) => s.isPreviewMode)
     const previewData = useEditorStore((s) => s.previewData)
     const _pushHistory = useEditorStore((s) => s._pushHistory)
+    const setZoom = useEditorStore((s) => s.setZoom)
+    const updateLayerText = useEditorStore((s) => s.updateLayerText)
 
     const canvasRef = useRef(null)
     const wrapperRef = useRef(null)
     const moveableRef = useRef(null)
+
+    // Inline text editing state
+    const [editingLayerId, setEditingLayerId] = useState(null)
 
     const selectedLayer = layers.find((l) => l.id === selectedLayerId)
 
@@ -45,13 +50,51 @@ function Canvas() {
         }
     }
 
-    // Resolve bindings in text for preview mode
-    const resolveText = (text) => {
-        if (!isPreviewMode || !text) return text
-        return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            return previewData[key] !== undefined ? previewData[key] : match
-        })
-    }
+
+
+    // Handle double-click on text to start inline editing
+    const handleTextDoubleClick = useCallback((e, layerId) => {
+        e.stopPropagation()
+        if (isPreviewMode) return
+        const layer = layers.find((l) => l.id === layerId)
+        if (layer && !layer.locked && layer.type === 'text') {
+            selectLayer(layerId)
+            setEditingLayerId(layerId)
+        }
+    }, [layers, isPreviewMode, selectLayer])
+
+    // Finish inline editing
+    const handleTextBlur = useCallback((e, layerId) => {
+        const newContent = e.target.innerText
+        if (newContent !== undefined) {
+            _pushHistory()
+            updateLayerText(layerId, { content: newContent })
+        }
+        setEditingLayerId(null)
+    }, [_pushHistory, updateLayerText])
+
+    // Cancel editing when clicking outside
+    useEffect(() => {
+        if (editingLayerId && !selectedLayerId) {
+            setEditingLayerId(null)
+        }
+    }, [selectedLayerId, editingLayerId])
+
+    // Ctrl+Scroll zoom
+    useEffect(() => {
+        const wrapper = wrapperRef.current
+        if (!wrapper) return
+        const handleWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault()
+                const delta = e.deltaY > 0 ? -0.05 : 0.05
+                const currentZoom = useEditorStore.getState().zoom
+                setZoom(currentZoom + delta)
+            }
+        }
+        wrapper.addEventListener('wheel', handleWheel, { passive: false })
+        return () => wrapper.removeEventListener('wheel', handleWheel)
+    }, [setZoom])
 
     // Build text effect styles
     const getTextEffectStyles = (effects) => {
@@ -124,15 +167,57 @@ function Canvas() {
                     whiteSpace: 'pre-wrap',
                     ...getTextEffectStyles(layer.text.effects),
                 }
+                const isEditing = editingLayerId === layer.id && !isPreviewMode
                 return (
                     <div
                         key={layer.id}
                         data-layer-id={layer.id}
-                        className="studio-layer"
-                        style={textStyle}
-                        onMouseDown={(e) => handleLayerClick(e, layer.id)}
+                        className={`studio-layer ${isEditing ? 'studio-layer-editing' : ''}`}
+                        style={{
+                            ...textStyle,
+                            outline: isEditing ? '2px solid var(--color-brand-400)' : undefined,
+                            cursor: isEditing ? 'text' : (layer.locked ? 'default' : 'move'),
+                        }}
+                        onMouseDown={(e) => {
+                            if (!isEditing) handleLayerClick(e, layer.id)
+                        }}
+                        onDoubleClick={(e) => handleTextDoubleClick(e, layer.id)}
+                        contentEditable={isEditing}
+                        suppressContentEditableWarning={true}
+                        onBlur={(e) => {
+                            if (isEditing) handleTextBlur(e, layer.id)
+                        }}
+                        onKeyDown={(e) => {
+                            if (isEditing) {
+                                e.stopPropagation() // Prevent keyboard shortcuts
+                                if (e.key === 'Escape') {
+                                    e.target.blur()
+                                }
+                            }
+                        }}
                     >
-                        {resolveText(layer.text.content)}
+                        {layer.text.content}
+                        {/* Form field indicator (edit mode only) */}
+                        {layer.text.isFormField && !isPreviewMode && !isEditing && (
+                            <span
+                                style={{
+                                    position: 'absolute',
+                                    top: -8,
+                                    right: -8,
+                                    fontSize: '10px',
+                                    background: 'var(--color-brand-500)',
+                                    color: 'white',
+                                    borderRadius: '4px',
+                                    padding: '1px 4px',
+                                    lineHeight: '14px',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 600,
+                                    pointerEvents: 'none',
+                                }}
+                            >
+                                Field
+                            </span>
+                        )}
                     </div>
                 )
             }
@@ -306,8 +391,8 @@ function Canvas() {
                 </div>
             </div>
 
-            {/* Moveable — Interactive handles for selected layer */}
-            {targetEl && selectedLayer && !selectedLayer.locked && !isPreviewMode && (
+            {/* Moveable — Interactive handles for selected layer (hidden during inline text editing) */}
+            {targetEl && selectedLayer && !selectedLayer.locked && !isPreviewMode && !editingLayerId && (
                 <Moveable
                     ref={moveableRef}
                     target={targetEl}

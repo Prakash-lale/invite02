@@ -339,6 +339,40 @@ function TextProperties() {
                     </p>
                 </EffectToggle>
             </div>
+
+            {/* ──────── Form Field Toggle ──────── */}
+            <div className="pt-2 border-t border-surface-200">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-surface-700">Form Field</span>
+                    <button
+                        onClick={() => updateLayerText(layer.id, { isFormField: !text.isFormField })}
+                        className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full transition-colors ${
+                            text.isFormField
+                                ? 'bg-brand-500 text-white'
+                                : 'bg-surface-100 text-surface-400 hover:bg-surface-200'
+                        }`}
+                    >
+                        {text.isFormField ? 'ON' : 'OFF'}
+                    </button>
+                </div>
+                {text.isFormField && (
+                    <div className="space-y-2 animate-fade-in">
+                        <div>
+                            <span className="text-[9px] text-surface-400 font-medium uppercase">Label (shown on storefront)</span>
+                            <input
+                                type="text"
+                                value={text.formFieldLabel || ''}
+                                onChange={(e) => updateLayerText(layer.id, { formFieldLabel: e.target.value })}
+                                className="input-base text-xs"
+                                placeholder={text.content || 'Field label'}
+                            />
+                        </div>
+                        <p className="text-[10px] text-surface-400">
+                            Text content "{text.content}" will be the default value
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

@@ -93,9 +93,12 @@ function LayersPanel() {
     const renameLayer = useEditorStore((s) => s.renameLayer)
     const moveLayerUp = useEditorStore((s) => s.moveLayerUp)
     const moveLayerDown = useEditorStore((s) => s.moveLayerDown)
+    const reorderLayers = useEditorStore((s) => s.reorderLayers)
 
     const [editingName, setEditingName] = useState(null)
     const [tempName, setTempName] = useState('')
+    const [dragOverIndex, setDragOverIndex] = useState(null)
+    const [dragIndex, setDragIndex] = useState(null)
 
     const getTypeIcon = (type) => {
         switch (type) {
@@ -116,7 +119,52 @@ function LayersPanel() {
         setEditingName(null)
     }
 
+    // Reversed layers for display (top layer = first in list)
     const reversedLayers = [...layers].reverse()
+
+    // Drag handlers — work with reversed display indices, convert to real indices for store
+    const handleDragStart = (e, displayIndex) => {
+        setDragIndex(displayIndex)
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', displayIndex.toString())
+        // Make drag image slightly transparent
+        if (e.target) e.target.style.opacity = '0.5'
+    }
+
+    const handleDragEnd = (e) => {
+        if (e.target) e.target.style.opacity = '1'
+        setDragIndex(null)
+        setDragOverIndex(null)
+    }
+
+    const handleDragOver = (e, displayIndex) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        if (displayIndex !== dragIndex) {
+            setDragOverIndex(displayIndex)
+        }
+    }
+
+    const handleDragLeave = () => {
+        setDragOverIndex(null)
+    }
+
+    const handleDrop = (e, toDisplayIndex) => {
+        e.preventDefault()
+        const fromDisplayIndex = dragIndex
+        if (fromDisplayIndex === null || fromDisplayIndex === toDisplayIndex) {
+            setDragIndex(null)
+            setDragOverIndex(null)
+            return
+        }
+        // Convert display indices (reversed) to real layer array indices
+        const lastIdx = layers.length - 1
+        const fromRealIndex = lastIdx - fromDisplayIndex
+        const toRealIndex = lastIdx - toDisplayIndex
+        reorderLayers(fromRealIndex, toRealIndex)
+        setDragIndex(null)
+        setDragOverIndex(null)
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -143,18 +191,29 @@ function LayersPanel() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-0.5">
-                        {reversedLayers.map((layer) => {
+                        {reversedLayers.map((layer, displayIndex) => {
                             const isSelected = selectedLayerId === layer.id
+                            const isDragOver = dragOverIndex === displayIndex && dragIndex !== displayIndex
                             return (
                                 <div
                                     key={layer.id}
-                                    className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer group transition-colors ${isSelected
+                                    draggable={editingName !== layer.id}
+                                    onDragStart={(e) => handleDragStart(e, displayIndex)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => handleDragOver(e, displayIndex)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, displayIndex)}
+                                    className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-grab group transition-colors ${isSelected
                                         ? 'bg-brand-50 border border-brand-200'
                                         : 'hover:bg-surface-50 border border-transparent'
-                                        }`}
+                                        } ${isDragOver ? 'border-t-2 !border-t-brand-400' : ''}`}
                                     onClick={() => selectLayer(layer.id)}
                                     style={{ opacity: layer.visible ? 1 : 0.5 }}
                                 >
+                                    {/* Drag handle */}
+                                    <span className="flex-shrink-0 text-surface-300 cursor-grab" title="Drag to reorder">
+                                        ⠿
+                                    </span>
                                     <span className={`flex-shrink-0 ${isSelected ? 'text-brand-600' : 'text-surface-500'}`}>
                                         {getTypeIcon(layer.type)}
                                     </span>
@@ -183,8 +242,6 @@ function LayersPanel() {
                                     )}
 
                                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                        <button onClick={(e) => { e.stopPropagation(); moveLayerUp(layer.id) }} className="p-0.5 rounded hover:bg-surface-200 text-surface-500" title="Move Up"><FiChevronUp size={11} /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); moveLayerDown(layer.id) }} className="p-0.5 rounded hover:bg-surface-200 text-surface-500" title="Move Down"><FiChevronDown size={11} /></button>
                                         <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id) }} className="p-0.5 rounded hover:bg-surface-200 text-surface-500" title={layer.visible ? 'Hide' : 'Show'}>{layer.visible ? <FiEye size={11} /> : <FiEyeOff size={11} />}</button>
                                         <button onClick={(e) => { e.stopPropagation(); toggleLayerLock(layer.id) }} className="p-0.5 rounded hover:bg-surface-200 text-surface-500" title={layer.locked ? 'Unlock' : 'Lock'}>{layer.locked ? <FiLock size={11} /> : <FiUnlock size={11} />}</button>
                                         <button onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id) }} className="p-0.5 rounded hover:bg-surface-200 text-surface-500" title="Duplicate"><FiCopy size={11} /></button>

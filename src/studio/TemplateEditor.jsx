@@ -6,20 +6,18 @@ import PropertyPanel from './panels/PropertyPanel'
 import Canvas from './canvas/Canvas'
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts'
 import useEditorStore from '../stores/useEditorStore'
-import useFormFieldStore from '../stores/useFormFieldStore'
 import templateStorage from '../lib/templateStorage'
 
 /**
  * TemplateEditor — Main editor page.
  * Loads existing template from localStorage or starts fresh.
+ * Form fields are now part of text layer data — no separate store needed.
  */
 function TemplateEditor() {
     useKeyboardShortcuts()
     const { id } = useParams()
     const loadTemplateJSON = useEditorStore((s) => s.loadTemplateJSON)
     const resetEditor = useEditorStore((s) => s.resetEditor)
-    const setFormFields = useFormFieldStore((s) => s.setFormFields)
-    const resetFields = useFormFieldStore((s) => s.resetFields)
 
     // Load template when editing an existing one
     useEffect(() => {
@@ -27,11 +25,9 @@ function TemplateEditor() {
             const template = templateStorage.getById(id)
             if (template) {
                 loadTemplateJSON(template)
-                setFormFields(template.formFields || [])
             }
         } else {
             resetEditor()
-            resetFields()
         }
     }, [id])
 
